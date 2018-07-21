@@ -23,6 +23,38 @@ window.addEventListener('load', () => {
     el.html(html);
   };
 
+  const getConversionResults = async () => {
+    const from = $('#from').val();
+    const to = $('#to').val();
+    const amount = $('#amount').val();
+
+
+    try {
+      const response = await api.post('/convert', { from, to });
+      const { rate } = response.data;
+      const result = rate * amount;
+      $('#result').html(`${to} ${result}`);
+    } catch (error) {
+      showError(error);
+    } finally {
+      $('#result-segment').removeClass('loading');
+    }
+  };
+
+  // Handle Convert Button Click Event
+  const convertRatesHandler = () => {
+    if ($('.ui.form').form('is valid')) {
+      // hide error message
+      $('.ui.error.message').hide();
+      // Post to Express server
+      $('#result-segment').addClass('loading');
+      getConversionResults();
+      // Prevent page from submitting to server
+      return false;
+    }
+    return true;
+  };
+
   // Router Declaration
   const router = new Router({
     mode: 'history',
@@ -56,10 +88,29 @@ window.addEventListener('load', () => {
     }
   });
 
-  router.add('/exchange', () => {
-    let html = exchangeTemplate;
-
+  router.add('/exchange', async () => {
+    let html = exchangeTemplate();
     el.html(html);
+
+    try {
+      const response = await api.get('/symbols');
+      const { symbols } = response.data;
+      html = exchangeTemplate({ symbols });
+      el.html(html);
+      $('.loading').removeClass('loading');
+      // Validate Form Inputs
+      $('.ui.form').form({
+        fields: {
+          from: 'empty',
+          to: 'empty',
+          amount: 'decimal',
+        },
+      });
+
+      $('.submit').click(convertRatesHandler);
+    } catch (error) {
+      showError(error);
+    }
   });
 
   router.add('/historical', () => {
