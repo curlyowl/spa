@@ -8,7 +8,20 @@ window.addEventListener('load', () => {
   const exchangeTemplate = Handlebars.compile($('#exchange-template').html());
   const historicalTemplate = Handlebars.compile($('#historical-template').html());
 
+  const api = axios.create({
+    baseURL: 'http://localhost:3000/api',
+    timeout: 5000
+  });
 
+  const showError = (error) => {
+    const {title, message} = error.response.data;
+
+    const html = errorTemplate({
+      color: 'red', title, message
+    });
+
+    el.html(html);
+  };
 
   // Router Declaration
   const router = new Router({
@@ -23,10 +36,24 @@ window.addEventListener('load', () => {
     },
   });
 
-  router.add('/', () => {
+  router.add('/', async () => {
     let html = ratesTemplate();
-
     el.html(html);
+
+    try {
+      const response = await api.get('/rates');
+
+      const {base, date, rates} = response.data;
+
+      // Display rates table
+      html = ratesTemplate({base, date, rates});
+
+      el.html(html);
+    } catch (error) {
+      showError(error);
+    } finally {
+      $('.loading').removeClass('loading');
+    }
   });
 
   router.add('/exchange', () => {
