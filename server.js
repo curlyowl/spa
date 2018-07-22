@@ -4,7 +4,7 @@ const express = require('express');
 
 const app = express();
 const port = process.env.PORT || 3000;
-const { getRates, getSymbols } = require('./lib/fixer-service');
+const { getRates, getSymbols, getHistoricalRate } = require('./lib/fixer-service');
 const { convertCurrency } = require('./lib/free-currency-service');
 const bodyParser = require('body-parser');
 
@@ -43,19 +43,6 @@ const errorHandler = (err, req, res) => {
   }
 };
 
-// const test = async () => {
-//   const data = await getSymbols();
-//
-//   console.log('test get symbs', data);
-// };
-
-// const test = async () => {
-//   const data = await convertCurrency('RUB', 'EUR');
-//   console.log('convert', data);
-// }
-//
-// test();
-
 app.get('/api/rates', async (req, res) => {
   try {
     const data = await getRates();
@@ -82,6 +69,18 @@ app.post('/api/convert', async (req, res) => {
   try {
     const {from, to} = req.body;
     const data = await convertCurrency(from, to);
+
+    res.setHeader('Content-Type', 'application/json');
+    res.send(data);
+  } catch (error) {
+    errorHandler(error, req, res);
+  }
+});
+
+app.post('/api/historical', async (req, res) => {
+  try {
+    const { date } = req.body;
+    const data = await getHistoricalRate(date);
 
     res.setHeader('Content-Type', 'application/json');
     res.send(data);

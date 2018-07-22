@@ -55,6 +55,33 @@ window.addEventListener('load', () => {
     return true;
   };
 
+  const getHistoricalRates = async () => {
+    const date = $('#date').val();
+
+    try {
+      const response = await api.post('/historical', { date });
+      const { base, rates } = response.data;
+      const html = ratesTemplate({base, date, rates});
+      $('#historical-table').html(html);
+    } catch(error) {
+      showError(error);
+    } finally {
+      $('.loading').removeClass('loading');
+    }
+  };
+
+  const historicalRatesHandler = () => {
+    if ($('.ui.form').form('is valid')) {
+      $('.ui.error.message').hide();
+      $('.segment').addClass('loading');
+
+      getHistoricalRates();
+
+      return false;
+    }
+    return true;
+  };
+
   // Router Declaration
   const router = new Router({
     mode: 'history',
@@ -116,7 +143,47 @@ window.addEventListener('load', () => {
   router.add('/historical', () => {
     let html = historicalTemplate();
     el.html(html);
+
+    $('#calendar').calendar({
+      type: 'date',
+      // yyyy-mm-dd
+      formatter: {
+        date: date => {
+          console.log('date', date);
+          console.log('toIsoString', new Date(date).toISOString().split('T'));
+          return new Date(date).toISOString().split('T')[0];
+        }
+      }
+    });
+
+    $('.ui.form').form({
+      fields: {
+        date: 'empty',
+      },
+    });
+
+    $('.submit').on('click', historicalRatesHandler);
   });
+
+  // router.add('/historical', () => {
+  //   // Display form
+  //   const html = historicalTemplate();
+  //   el.html(html);
+  //   // Activate Date Picker
+  //   $('#calendar').calendar({
+  //     type: 'date',
+  //     formatter: { //format date to yyyy-mm-dd
+  //       date: date => new Date(date).toISOString().split('T')[0],
+  //     },
+  //   });
+  //   // Validate Date input
+  //   $('.ui.form').form({
+  //     fields: {
+  //       date: 'empty',
+  //     },
+  //   });
+  //   $('.submit').click(historicalRatesHandler);
+  // });
 
   // Navigate app to current url
   router.navigateTo(window.location.pathname);
